@@ -1,0 +1,6 @@
+.DS_Store
+*.log
+*.tmp
+.codex-runs/
+test/.gateway-*
+test/.cookie-home-*/

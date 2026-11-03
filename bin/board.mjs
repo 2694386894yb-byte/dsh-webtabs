@@ -1,0 +1,5 @@
+import http from 'node:http';
+import {data,lockState,probe,renewalCookies,renderBoard} from './lib/board-core.mjs';
+const server=http.createServer(async(req,res)=>{if(!['/','/health'].includes(req.url)){res.writeHead(404);res.end('未找到');return;}const d=data(),all=[...new Map(d.groups.flatMap(g=>g.sessions).map(s=>[s.id,s])).values()],[webReachable,locks]=await Promise.all([probe(),lockState(all)]);res.setHeader('Cache-Control','no-store');if(req.url==='/health'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,webReachable,sessions:all.length,desktopLocked:all.filter(s=>locks.get(s.id)==='desktop').length}));return;}if(req.method==='GET'&&webReachable){const cookies=await renewalCookies();if(cookies)res.setHeader('Set-Cookie',cookies);}res.setHeader('Content-Type','text/html; charset=utf-8');res.end(renderBoard(d,webReachable,locks,{sessionHref:id=>`http://127.0.0.1:52352/?session=${encodeURIComponent(id)}`}));});
+server.listen(Number(process.env.DSH_WEBTABS_PORT||52353),'127.0.0.1');
+for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>server.close(()=>process.exit(0)));
